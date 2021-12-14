@@ -174,7 +174,7 @@ CP_API void				CP_Sound_PlayMusic					(CP_Sound sound);
 CP_API void				CP_Sound_PlayAdvanced				(CP_Sound sound, float volume, float pitch, CP_BOOL looping, CP_SOUND_GROUP group);
 CP_API void				CP_Sound_PauseAll					(void);
 CP_API void				CP_Sound_PauseGroup					(CP_SOUND_GROUP group);
-CP_API void				CP_Sound_ResumeAll					(void);
+CP_API void				CP_Sound_ResumeAll	 				(void);
 CP_API void				CP_Sound_ResumeGroup				(CP_SOUND_GROUP group);
 CP_API void				CP_Sound_StopAll					(void);
 CP_API void				CP_Sound_StopGroup					(CP_SOUND_GROUP group);
@@ -182,6 +182,9 @@ CP_API void				CP_Sound_SetGroupVolume				(CP_SOUND_GROUP group, float volume);
 CP_API float			CP_Sound_GetGroupVolume				(CP_SOUND_GROUP group);
 CP_API void				CP_Sound_SetGroupPitch				(CP_SOUND_GROUP group, float pitch);
 CP_API float			CP_Sound_GetGroupPitch				(CP_SOUND_GROUP group);
+CP_API void				CP_Sound_SetGroupDSP				(CP_SOUND_GROUP group, CP_SOUND_DSP dspType);
+CP_API void				CP_Sound_ClearGroupDSP				(CP_SOUND_GROUP group);
+CP_API void				CP_Sound_RemoveGroupDSP				(CP_SOUND_GROUP group, CP_SOUND_DSP dsp);
 
 
 //---------------------------------------------------------

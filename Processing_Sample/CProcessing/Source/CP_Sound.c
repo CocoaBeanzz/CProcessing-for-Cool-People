@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // file:	CP_Sound.c
-// author:	Daniel Hamilton, Andrea Ellinger
+// author:	Daniel Hamilton, Andrea Ellinger, K Preston
 // brief:	Load, play and manipulate sound files 
 //
 // Copyright © 2019 DigiPen, All rights reserved.
@@ -31,6 +31,7 @@ static FMOD_SYSTEM* _fmod_system = NULL;
 static vect_CP_Sound* sound_vector = NULL;
 
 static FMOD_CHANNELGROUP* channel_groups[CP_SOUND_GROUP_MAX] = { NULL };
+static FMOD_DSP* dsp_list[CP_SOUND_DSP_MAX] = { NULL };
 
 //------------------------------------------------------------------------------
 // Internal Functions:
@@ -84,6 +85,64 @@ void CP_Sound_Init(void)
 	{
 		result = FMOD_System_CreateChannelGroup(_fmod_system, NULL, &channel_groups[index]);
 	}
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+
+	// Assign FMOD DSP effects within dsp_list array
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_ITLOWPASS, &dsp_list[CP_SOUND_DSP_LOWPASS]);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_SFXREVERB, &dsp_list[CP_SOUND_DSP_REVERB]);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_ECHO, &dsp_list[CP_SOUND_DSP_ECHO]);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_DISTORTION, &dsp_list[CP_SOUND_DSP_DISTORTION]);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_FLANGE, &dsp_list[CP_SOUND_DSP_FLANGE]);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_TREMOLO, &dsp_list[CP_SOUND_DSP_TREMOLO]);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_CHORUS, &dsp_list[CP_SOUND_DSP_CHORUS]);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		CP_Sound_Shutdown();
+		return;
+	}
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_PITCHSHIFT, &dsp_list[CP_SOUND_DSP_PITCHSHIFT]);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
@@ -186,16 +245,36 @@ CP_Sound CP_Sound_LoadInternal(const char* filepath, CP_BOOL streamFromDisc)
 // Library Functions:
 //------------------------------------------------------------------------------
 
+/*
+	Load a CP_Sound by inputting the file path of the sound file as a string (const char*).
+	Parameters:
+		- filepath (const char*) - The path to the sound file that you want to load.
+	Return:
+		- CP_Sound - The loaded sound, returns a NULL CP_Sound if the sound could not be loaded.
+*/
 CP_API CP_Sound CP_Sound_Load(const char* filepath)
 {
 	return CP_Sound_LoadInternal(filepath, FALSE);
 }
 
+/*
+	Loads a CP_Sound from the given file path, and streams the audio from disk while it is 
+	playing instead of loading the entire file into memory.
+	Parameters:
+		- filepath (const char*) - The filepath to the music you want to load.
+	Return:
+		- CP_Sound - The music loaded from the given filepath, returns NULL if no music could be loaded.
+*/
 CP_API CP_Sound CP_Sound_LoadMusic(const char* filepath)
 {
 	return CP_Sound_LoadInternal(filepath, TRUE);
 }
 
+/*
+	Frees a given CP_Sound from memory. The CP_Sound will not be valid after this call.
+	Parameters:
+		- sound (CP_Sound) - The sound you want to free.
+*/
 CP_API void CP_Sound_Free(CP_Sound* sound)
 {
 	if (sound == NULL || *sound == NULL)
@@ -223,16 +302,39 @@ CP_API void CP_Sound_Free(CP_Sound* sound)
 	// TODO: handle error - we reached the end of the list without finding the sound
 }
 
+/*
+	Plays a given CP_Sound once in the CP_SOUND_GROUP_SFX sound group.
+	Parameters:
+		- sound (CP_Sound) - The sound you want to play.*/
 CP_API void CP_Sound_Play(CP_Sound sound)
 {
 	CP_Sound_PlayAdvanced(sound, 1.0f, 1.0f, FALSE, CP_SOUND_GROUP_SFX);
 }
 
+/*
+	Plays a given CP_Sound continuously in the CP_SOUND_GROUP_MUSIC sound group. 
+	The sound will loop until it is stopped.
+	Parameters:
+		- sound (CP_Sound) - The sound you want to play as music.
+	Return:
+		- This function does not return anything.
+*/
 CP_API void CP_Sound_PlayMusic(CP_Sound sound)
 {
 	CP_Sound_PlayAdvanced(sound, 1.0f, 1.0f, TRUE, CP_SOUND_GROUP_MUSIC);
 }
 
+/*
+	Plays a given CP_Sound with provided values for the sound's volume and pitch, 
+	whether the sound will loop, and the sound group to play it in.
+	Parameters:
+		- sound (CP_Sound) - The sound that you want to play.
+		- volume (float) - The volume modifier that you want to apply (1.0f = no modification, 0.0 = silent).
+		- pitch (float) - The pitch modification that you want to apply (1.0f = no modification, 
+			0.5 = half pitch, 2.0 = double pitch).
+		- looping (P_BOOL) - If you want the sound to loop or not.
+		- group (CP_SOUND_GROUP_MUSIC) - The sound group that you want the sound played in.
+*/
 CP_API void CP_Sound_PlayAdvanced(CP_Sound sound, float volume, float pitch, CP_BOOL looping, CP_SOUND_GROUP group)
 {
 	if (!CP_IsValidSoundGroup(group) || sound == NULL)
@@ -288,6 +390,9 @@ CP_API void CP_Sound_PlayAdvanced(CP_Sound sound, float volume, float pitch, CP_
 	// TODO: handle error - FMOD_ErrorString(result)
 }
 
+/*
+	Pauses all CP_Sounds that are currently playing.
+*/
 CP_API void CP_Sound_PauseAll(void)
 {
 	for (unsigned index = 0; index < CP_SOUND_GROUP_MAX; ++index)
@@ -300,6 +405,11 @@ CP_API void CP_Sound_PauseAll(void)
 	}
 }
 
+/*
+	Pauses all CP_Sounds currently playing within the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group that you want to pause.
+*/
 CP_API void CP_Sound_PauseGroup(CP_SOUND_GROUP group)
 {
 	if(CP_IsValidSoundGroup(group))
@@ -312,6 +422,9 @@ CP_API void CP_Sound_PauseGroup(CP_SOUND_GROUP group)
 	}
 }
 
+/*
+	Resumes all CP_Sounds that are currently paused.
+*/
 CP_API void CP_Sound_ResumeAll(void)
 {
 	for (unsigned index = 0; index < CP_SOUND_GROUP_MAX; ++index)
@@ -324,6 +437,11 @@ CP_API void CP_Sound_ResumeAll(void)
 	}
 }
 
+/*
+	Resumes all CP_Sounds that are currently paused within the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group that you want to resume playing.
+*/
 CP_API void CP_Sound_ResumeGroup(CP_SOUND_GROUP group)
 {
 	if (CP_IsValidSoundGroup(group))
@@ -336,6 +454,9 @@ CP_API void CP_Sound_ResumeGroup(CP_SOUND_GROUP group)
 	}
 }
 
+/*
+	Stops all currently playing CP_Sounds in all CP_SOUND_GROUPS and resets them to their beginnings.
+*/
 CP_API void CP_Sound_StopAll(void)
 {
 	for (unsigned index = 0; index < CP_SOUND_GROUP_MAX; ++index)
@@ -348,6 +469,12 @@ CP_API void CP_Sound_StopAll(void)
 	}
 }
 
+/*
+	Stops all CP_Sounds that are currently playing within a given group and 
+	resets them to their beginnings.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The group that you want to stop all sounds in.
+*/
 CP_API void CP_Sound_StopGroup(CP_SOUND_GROUP group)
 {
 	if (CP_IsValidSoundGroup(group))
@@ -360,6 +487,13 @@ CP_API void CP_Sound_StopGroup(CP_SOUND_GROUP group)
 	}
 }
 
+/*
+	Sets the volume of all CP_Sounds within the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group that you want to set the volume for.
+		- volume (float) - The volume modifier you want to apply to the group (1.0f is 
+		normal volume, 0.0 is silent).
+*/
 CP_API void CP_Sound_SetGroupVolume(CP_SOUND_GROUP group, float volume)
 {
 	if (CP_IsValidSoundGroup(group))
@@ -372,6 +506,13 @@ CP_API void CP_Sound_SetGroupVolume(CP_SOUND_GROUP group, float volume)
 	}
 }
 
+/*
+	Gets the volume modifier of all CP_Sounds within the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group that you want the volume modifier of.
+	Return:
+		- float - The current volume modifier applied to all sounds within the given group.
+*/
 CP_API float CP_Sound_GetGroupVolume(CP_SOUND_GROUP group)
 {
 	float volume = 0;
@@ -386,6 +527,13 @@ CP_API float CP_Sound_GetGroupVolume(CP_SOUND_GROUP group)
 	return volume;
 }
 
+/*
+	Sets the pitch modifier of all CP_Sounds within the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group that you want to modify the pitch of.
+		- pitch (float) - The pitch modifier that you want to give to all sounds in the given 
+			group (1.0 is normal pitch, 0.5 is half pitch, 2.0 is double pitch).
+*/
 CP_API void CP_Sound_SetGroupPitch(CP_SOUND_GROUP group, float pitch)
 {
 	if (CP_IsValidSoundGroup(group))
@@ -398,6 +546,13 @@ CP_API void CP_Sound_SetGroupPitch(CP_SOUND_GROUP group, float pitch)
 	}
 }
 
+/*
+	Gets the pitch modifier applied to all CP_Sounds within the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group that you want to get the pitch of.
+	Return:
+		- float - The current pitch modifier of the specified CP_SOUND_GROUP.
+*/
 CP_API float CP_Sound_GetGroupPitch(CP_SOUND_GROUP group)
 {
 	float pitch = 0;
@@ -410,4 +565,65 @@ CP_API float CP_Sound_GetGroupPitch(CP_SOUND_GROUP group)
 		}
 	}
 	return pitch;
+}
+
+/*
+	Connects input CP_SOUND_DSP to the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group to connect the DSP to.
+		- dspType (CP_SOUND_DSP) - The DSP effect type to connect. 
+*/
+CP_API void CP_Sound_SetGroupDSP(CP_SOUND_GROUP group, CP_SOUND_DSP dspType)
+{
+	if (CP_IsValidSoundGroup(group))
+	{
+		result = FMOD_ChannelGroup_AddDSP(channel_groups[group], 0, dsp_list[dspType]);
+		if (result != FMOD_OK)
+		{
+			// TODO: handle error - FMOD_ErrorString(result)
+		}
+		result = FMOD_DSP_SetActive(dsp_list[dspType], 1);
+		if (result != FMOD_OK)
+		{
+			// TODO: handle error - FMOD_ErrorString(result)
+		}
+	}
+}
+
+/*
+	Removes all CP_SOUND_DSP connections from the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group to remove DSP connections from. 
+*/
+CP_API void CP_Sound_ClearGroupDSP(CP_SOUND_GROUP group)
+{
+	if (CP_IsValidSoundGroup(group))
+	{
+		for (CP_SOUND_DSP dsp = 0; dsp < CP_SOUND_DSP_MAX; dsp++)
+		{
+			result = FMOD_ChannelGroup_RemoveDSP(channel_groups[group], dsp_list[dsp]);
+			if (result != FMOD_OK)
+			{
+				// TODO: handle error - FMOD_ErrorString(result)
+			}
+		}
+	}
+}
+
+/*
+	Removes a specific CP_SOUND_DSP connection from the given CP_SOUND_GROUP.
+	Parameters:
+		- group (CP_SOUND_GROUP) - The sound group to remove DSP connections from.
+		- dsp (CP_SOUND_DSP) - The DSP effect type to remove. 
+*/
+CP_API void CP_Sound_RemoveGroupDSP(CP_SOUND_GROUP group, CP_SOUND_DSP dsp)
+{
+	if (CP_IsValidSoundGroup(group))
+	{
+		result = FMOD_ChannelGroup_RemoveDSP(channel_groups[group], dsp_list[dsp]);
+		if (result != FMOD_OK)
+		{
+			// TODO: handle error - FMOD_ErrorString(result)
+		}
+	}
 }
