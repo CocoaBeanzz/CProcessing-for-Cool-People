@@ -23,6 +23,8 @@
 #define FMOD_TRUE 1
 #define FMOD_FALSE 0
 
+#define CP_SOUND_DSP_PARAM_NOTUSED -1
+
 VECT_GENERATE_TYPE(CP_Sound)
 
 static FMOD_RESULT result = 0;
@@ -31,7 +33,9 @@ static FMOD_SYSTEM* _fmod_system = NULL;
 static vect_CP_Sound* sound_vector = NULL;
 
 static FMOD_CHANNELGROUP* channel_groups[CP_SOUND_GROUP_MAX] = { NULL };
-static FMOD_DSP* dsp_list[CP_SOUND_DSP_MAX] = { NULL };
+//static FMOD_DSP* dsp_list[CP_SOUND_DSP_MAX] = { NULL };
+
+static CP_Sound_DSP_Struct dsp_list[CP_SOUND_DSP_MAX];
 
 //------------------------------------------------------------------------------
 // Internal Functions:
@@ -93,62 +97,86 @@ void CP_Sound_Init(void)
 	}
 
 	// Assign FMOD DSP effects within dsp_list array
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_ITLOWPASS, &dsp_list[CP_SOUND_DSP_LOWPASS]);
+	// Lowpass	| Parameter 1: = Cutoff Frequency	| Parameter 2 = Resonance
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_ITLOWPASS, &dsp_list[CP_SOUND_DSP_LOWPASS].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_SFXREVERB, &dsp_list[CP_SOUND_DSP_REVERB]);
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_LOWPASS, CP_SOUND_DSP_PARAM1, 0, 1, 22000);	// Cutoff
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_LOWPASS, CP_SOUND_DSP_PARAM2, 1, 0, 127);	// Resonance
+	// Reverb	| Parameter 1: = Decay Time			| Parameter 2 = Wet Level
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_SFXREVERB, &dsp_list[CP_SOUND_DSP_REVERB].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_ECHO, &dsp_list[CP_SOUND_DSP_ECHO]);
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_REVERB, CP_SOUND_DSP_PARAM1, 0, 100, 20000);	// Decay Time
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_REVERB, CP_SOUND_DSP_PARAM2, 11, -80, 20);	// Wet Level
+	// Echo		| Parameter 1: = Delay Time			| Parameter 2 = Feedback
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_ECHO, &dsp_list[CP_SOUND_DSP_ECHO].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_DISTORTION, &dsp_list[CP_SOUND_DSP_DISTORTION]);
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_ECHO, CP_SOUND_DSP_PARAM1, 0, 1, 5000);		// Decay Time
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_ECHO, CP_SOUND_DSP_PARAM2, 1, 0, 100);		// Wet Level
+	// Distort	| Parameter 1: = Distortion Level	| Parameter 2 = [NOT USED]
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_DISTORTION, &dsp_list[CP_SOUND_DSP_DISTORT].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_FLANGE, &dsp_list[CP_SOUND_DSP_FLANGE]);
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_DISTORT, CP_SOUND_DSP_PARAM1, 0, 0, 1);		// Distortion Level
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_DISTORT, CP_SOUND_DSP_PARAM2, CP_SOUND_DSP_PARAM_NOTUSED, 0, 0);
+	// Flange	| Parameter 1: = Rate				| Parameter 2 = Mix
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_FLANGE, &dsp_list[CP_SOUND_DSP_FLANGE].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_TREMOLO, &dsp_list[CP_SOUND_DSP_TREMOLO]);
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_FLANGE, CP_SOUND_DSP_PARAM1, 2, 0, 20);		// Rate
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_FLANGE, CP_SOUND_DSP_PARAM2, 0, 0, 100);		// Mix
+	// Tremolo	| Parameter 1: = Frequency			| Parameter 2 = Depth
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_TREMOLO, &dsp_list[CP_SOUND_DSP_TREMOLO].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_CHORUS, &dsp_list[CP_SOUND_DSP_CHORUS]);
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_TREMOLO, CP_SOUND_DSP_PARAM1, 0, 0.1f, 20);	// Frequency
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_TREMOLO, CP_SOUND_DSP_PARAM2, 1, 0, 1);		// Depth
+	// Chorus	| Parameter 1: = Modulation Depth	| Parameter 2 = Mix
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_CHORUS, &dsp_list[CP_SOUND_DSP_CHORUS].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
-	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_PITCHSHIFT, &dsp_list[CP_SOUND_DSP_PITCHSHIFT]);
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_CHORUS, CP_SOUND_DSP_PARAM1, 2, 0, 100);		// Modulation Depth
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_CHORUS, CP_SOUND_DSP_PARAM2, 0, 0, 100);		// Mix
+	// Pitch	| Parameter 1: = Pitch				| Parameter 2 = [NOT USED]
+	result = FMOD_System_CreateDSPByType(_fmod_system, FMOD_DSP_TYPE_PITCHSHIFT, &dsp_list[CP_SOUND_DSP_PITCH].dsp);
 	if (result != FMOD_OK)
 	{
 		// TODO: handle error - FMOD_ErrorString(result)
 		CP_Sound_Shutdown();
 		return;
 	}
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_PITCH, CP_SOUND_DSP_PARAM1, 0, 0.5f, 2);		// Frequency
+	CP_Sound_DSP_MapParameter(CP_SOUND_DSP_PITCH, CP_SOUND_DSP_PARAM2, CP_SOUND_DSP_PARAM_NOTUSED, 0, 0);
 }
 
 void CP_Sound_Update(void)
@@ -240,6 +268,14 @@ CP_Sound CP_Sound_LoadInternal(const char* filepath, CP_BOOL streamFromDisc)
 
 	return sound;
 }
+
+void CP_Sound_DSP_MapParameter(CP_SOUND_DSP dsp, CP_SOUND_DSP_PARAM param, int index, float min, float max)
+{
+	dsp_list[dsp].param[param].index = index;
+	dsp_list[dsp].param[param].min = min;
+	dsp_list[dsp].param[param].max = max;
+}
+
 
 //------------------------------------------------------------------------------
 // Library Functions:
@@ -577,12 +613,12 @@ CP_API void CP_Sound_SetGroupDSP(CP_SOUND_GROUP group, CP_SOUND_DSP dspType)
 {
 	if (CP_IsValidSoundGroup(group))
 	{
-		result = FMOD_ChannelGroup_AddDSP(channel_groups[group], 0, dsp_list[dspType]);
+		result = FMOD_ChannelGroup_AddDSP(channel_groups[group], 0, dsp_list[dspType].dsp);
 		if (result != FMOD_OK)
 		{
 			// TODO: handle error - FMOD_ErrorString(result)
 		}
-		result = FMOD_DSP_SetActive(dsp_list[dspType], 1);
+		result = FMOD_DSP_SetActive(dsp_list[dspType].dsp, 1);
 		if (result != FMOD_OK)
 		{
 			// TODO: handle error - FMOD_ErrorString(result)
@@ -601,7 +637,7 @@ CP_API void CP_Sound_ClearGroupDSP(CP_SOUND_GROUP group)
 	{
 		for (CP_SOUND_DSP dsp = 0; dsp < CP_SOUND_DSP_MAX; dsp++)
 		{
-			result = FMOD_ChannelGroup_RemoveDSP(channel_groups[group], dsp_list[dsp]);
+			result = FMOD_ChannelGroup_RemoveDSP(channel_groups[group], dsp_list[dsp].dsp);
 			if (result != FMOD_OK)
 			{
 				// TODO: handle error - FMOD_ErrorString(result)
@@ -620,10 +656,64 @@ CP_API void CP_Sound_RemoveGroupDSP(CP_SOUND_GROUP group, CP_SOUND_DSP dsp)
 {
 	if (CP_IsValidSoundGroup(group))
 	{
-		result = FMOD_ChannelGroup_RemoveDSP(channel_groups[group], dsp_list[dsp]);
+		result = FMOD_ChannelGroup_RemoveDSP(channel_groups[group], dsp_list[dsp].dsp);
 		if (result != FMOD_OK)
 		{
 			// TODO: handle error - FMOD_ErrorString(result)
+		}
+	}
+}
+
+/*
+	Sets the value of a given parameter of the specified CP_SOUND_DSP.
+	Parameters:
+		- dsp (CP_SOUND_DSP) - The DSP effect to modify.
+		- parameter (CP_SOUND_DSP_PARAM) - The parameter to modify.
+		- value (float) - The new parameter value to set.
+*/
+CP_API void CP_Sound_SetDSPParameter(CP_SOUND_DSP dsp, CP_SOUND_DSP_PARAM parameter, float value)
+{
+	if (dsp_list[dsp].param[parameter].index != CP_SOUND_DSP_PARAM_NOTUSED)
+	{
+		result = FMOD_DSP_SetParameterFloat(dsp_list[dsp].dsp,
+			dsp_list[dsp].param[parameter].index,
+			(dsp_list[dsp].param[parameter].max - dsp_list[dsp].param[parameter].min) * value +
+			dsp_list[dsp].param[parameter].min);
+		if (result != FMOD_OK)
+		{
+			// TODO: handle error - FMOD_ErrorString(result)
+			return;
+		}
+	}
+}
+
+/*
+	Resets given DSP internal state and parameters. 
+	Parameters:
+		- dsp (CP_SOUND_DSP) - The DSP effect to reset.
+*/
+CP_API void CP_Sound_ResetDSP(CP_SOUND_DSP dsp)
+{
+	result = FMOD_DSP_Reset(dsp_list[dsp].dsp);
+	if (result != FMOD_OK)
+	{
+		// TODO: handle error - FMOD_ErrorString(result)
+		return;
+	}
+}
+
+/*
+	Resets all DSP internal states and parameters.
+*/
+CP_API void CP_Sound_ResetAllDSPs()
+{
+	for (CP_SOUND_DSP dsp = 0; dsp < CP_SOUND_DSP_MAX; dsp++)
+	{
+		result = FMOD_DSP_Reset(dsp_list[dsp].dsp);
+		if (result != FMOD_OK)
+		{
+			// TODO: handle error - FMOD_ErrorString(result)
+			return;
 		}
 	}
 }

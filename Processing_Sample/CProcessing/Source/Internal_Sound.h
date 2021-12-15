@@ -38,6 +38,12 @@ typedef struct CP_Sound_Struct
     FMOD_SOUND* sound;
 } CP_Sound_Struct;
 
+typedef struct CP_Sound_DSP_Struct
+{
+	FMOD_DSP* dsp;
+	CP_Sound_DSP_Param_Struct param[2];
+} CP_Sound_DSP_Struct;
+
 //------------------------------------------------------------------------------
 // Public Enums:
 //------------------------------------------------------------------------------
@@ -53,6 +59,8 @@ typedef struct CP_Sound_Struct
 void CP_Sound_Init(void);
 void CP_Sound_Update(void);
 void CP_Sound_Shutdown(void);
+
+void CP_Sound_DSP_MapParameter(CP_SOUND_DSP dsp, CP_SOUND_DSP_PARAM param, int index, float min, float max);
 
 #ifdef __cplusplus
 }

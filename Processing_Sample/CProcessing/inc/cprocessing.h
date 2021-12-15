@@ -185,7 +185,9 @@ CP_API float			CP_Sound_GetGroupPitch				(CP_SOUND_GROUP group);
 CP_API void				CP_Sound_SetGroupDSP				(CP_SOUND_GROUP group, CP_SOUND_DSP dspType);
 CP_API void				CP_Sound_ClearGroupDSP				(CP_SOUND_GROUP group);
 CP_API void				CP_Sound_RemoveGroupDSP				(CP_SOUND_GROUP group, CP_SOUND_DSP dsp);
-
+CP_API void				CP_Sound_SetDSPParameter			(CP_SOUND_DSP dsp, CP_SOUND_DSP_PARAM parameter, float value);
+CP_API void				CP_Sound_ResetDSP					(CP_SOUND_DSP dsp);
+CP_API void				CP_Sound_ResetAllDSPs				();
 
 //---------------------------------------------------------
 // FONT:

@@ -187,26 +187,32 @@ typedef enum CP_SOUND_DSP
 	CP_SOUND_DSP_LOWPASS,
 	CP_SOUND_DSP_REVERB,
 	CP_SOUND_DSP_ECHO,
-	CP_SOUND_DSP_DISTORTION,
+	CP_SOUND_DSP_DISTORT,
 	CP_SOUND_DSP_FLANGE,
 	CP_SOUND_DSP_TREMOLO,
 	CP_SOUND_DSP_CHORUS,
-	CP_SOUND_DSP_PITCHSHIFT,
+	CP_SOUND_DSP_PITCH,
 	CP_SOUND_DSP_MAX
 } CP_SOUND_DSP;
 
 
 //---------------------------------------------------------
 // DSP PARAMETERS:
-//		A selection of common FMOD DSP effects
+//		Parameter values to be mapped to FMOD DSP parameter indices
 typedef enum CP_SOUND_DSP_PARAM
 {
 	CP_SOUND_DSP_PARAM1,
 	CP_SOUND_DSP_PARAM2,
-	CP_SOUND_DSP_PARAM3,
 	CP_SOUND_DSP_PARAM_MAX
 } CP_SOUND_DSP_PARAM;
 
+
+typedef struct CP_Sound_DSP_Param_Struct
+{
+	int index;
+	float min;
+	float max;
+} CP_Sound_DSP_Param_Struct;
 
 //---------------------------------------------------------
 // MATH:
